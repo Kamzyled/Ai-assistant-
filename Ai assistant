@@ -1,0 +1,118 @@
+# Install required libraries (uncomment if needed)
+# !pip install speechrecognition pillow requests
+
+# Import necessary libraries
+import speech_recognition as sr
+import subprocess
+from PIL import Image, ImageFilter
+import os
+import sys
+import requests
+
+# Voice Recognition Function
+def listen_to_command():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening for your command...")
+        audio = recognizer.listen(source)
+    try:
+        command = recognizer.recognize_google(audio)
+        print(f"You said: {command}")
+        return command.lower()
+    except sr.UnknownValueError:
+        print("Sorry, I couldn't understand.")
+        return None
+
+# App Control Functions
+def open_app(app_name):
+    try:
+        print(f"Opening {app_name}...")
+        subprocess.run(["open", f"/Applications/{app_name}.app"])
+    except Exception as e:
+        print(f"Failed to open app: {e}")
+
+def close_app(app_name):
+    try:
+        print(f"Closing {app_name}...")
+        subprocess.run(["killall", app_name])
+    except Exception as e:
+        print(f"Failed to close app: {e}")
+
+# Image Editing Function
+def edit_picture(image_path):
+    try:
+        img = Image.open(image_path)
+        img = img.filter(ImageFilter.CONTOUR)  # Example: Apply contour filter
+        edited_path = "edited_" + os.path.basename(image_path)
+        img.save(edited_path)
+        print(f"Image edited and saved as {edited_path}")
+    except Exception as e:
+        print(f"Failed to edit image: {e}")
+
+# Memory Management Functions
+def remember(text):
+    with open("memory.txt", "a") as file:
+        file.write(text + "\n")
+    print("Memory saved!")
+
+def recall_memory():
+    try:
+        with open("memory.txt", "r") as file:
+            memories = file.readlines()
+            print("Here are your saved memories:")
+            for memory in memories:
+                print("- " + memory.strip())
+    except FileNotFoundError:
+        print("No memories found!")
+
+# AI Upgrade Function
+def upgrade_ai(script_url, script_name="ai_assistant.py"):
+    try:
+        print("Checking for updates...")
+        # Download the latest version of the script
+        response = requests.get(script_url)
+        if response.status_code == 200:
+            # Save the new script
+            with open(script_name, "w") as file:
+                file.write(response.text)
+            print("Upgrade completed successfully!")
+
+            # Optionally, restart the script
+            restart_script(script_name)
+        else:
+            print("Failed to fetch the latest version. Status code:", response.status_code)
+    except Exception as e:
+        print(f"An error occurred during the upgrade: {e}")
+
+# Restart the Script
+def restart_script(script_name):
+    print("Restarting the AI...")
+    os.execv(sys.executable, ["python"] + [script_name])
+
+# Command Execution Function
+def execute_command(command):
+    if "upgrade" in command:
+        # Provide the URL of your script repository or file server
+        script_url = "https://example.com/ai_assistant.py"  # Replace with your script's URL
+        upgrade_ai(script_url)
+    elif "open app" in command:
+        app_name = command.replace("open app", "").strip()
+        open_app(app_name)
+    elif "close app" in command:
+        app_name = command.replace("close app", "").strip()
+        close_app(app_name)
+    elif "edit picture" in command:
+        edit_picture("example.jpg")  # Replace with the image path
+    elif "remember" in command:
+        memory_text = command.replace("remember", "").strip()
+        remember(memory_text)
+    elif "recall memory" in command:
+        recall_memory()
+    else:
+        print("Command not recognized.")
+
+# Main Loop
+while True:
+    command = listen_to_command()
+    if command:
+        execute_command(command)
